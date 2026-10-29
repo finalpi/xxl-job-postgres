@@ -204,6 +204,10 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.4</version>
                 <configuration>
+                    <!-- 测试日志写入模块输出目录，兼容没有 /data 写权限的 Linux runner。 -->
+                    <systemPropertyVariables>
+                        <LOG_HOME>${project.build.directory}/test-logs</LOG_HOME>
+                    </systemPropertyVariables>
                     <!-- 旧的 OpenAPI 示例需要手工启动外部服务，单独按需执行。 -->
                     <excludes><exclude>**/openapi/**</exclude></excludes>
                 </configuration>
