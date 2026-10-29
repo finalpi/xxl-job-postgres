@@ -1,0 +1,131 @@
+name: PostgreSQL tests and multi-arch image
+
+on:
+  push:
+    branches: [master, 'codex/**']
+    tags: ['v*']
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: postgres-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+        postgres: ['14', '16', '18']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_USER: xxltest
+          POSTGRES_PASSWORD: test-only-password
+          POSTGRES_DB: xxl_job
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U xxltest -d xxl_job"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      TEST_DATABASE_URL: jdbc:postgresql://127.0.0.1:5432/xxl_job
+      TEST_DATABASE_USER: xxltest
+      TEST_DATABASE_PASSWORD: test-only-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: maven
+      - name: Initialize PostgreSQL and verify replay safety
+        run: |
+          for pass in 1 2; do
+            docker exec -i '${{ job.services.postgres.id }}' psql -U xxltest -d xxl_job -v ON_ERROR_STOP=1 < doc/db/tables_xxl_job.sql
+            docker exec -i '${{ job.services.postgres.id }}' psql -U xxltest -d xxl_job -v ON_ERROR_STOP=1 < doc/db/log_partitions.sql
+          done
+      - name: Test core, all admin mappers, retention, concurrency and end-to-end execution
+        run: mvn -B -ntp -pl xxl-job-admin -am -Dmaven.javadoc.skip=true -Dgpg.skip=true verify
+      - name: Compile all sample modules
+        run: mvn -B -ntp -DskipTests -Dmaven.javadoc.skip=true -Dgpg.skip=true package
+      - name: Build and smoke-test native image
+        run: |
+          docker build -t xxl-job-test -f xxl-job-admin/Dockerfile xxl-job-admin
+          docker run -d --name xxl-job-test --network host \
+            -e SPRING_DATASOURCE_URL="$TEST_DATABASE_URL" \
+            -e SPRING_DATASOURCE_USERNAME="$TEST_DATABASE_USER" \
+            -e SPRING_DATASOURCE_PASSWORD="$TEST_DATABASE_PASSWORD" xxl-job-test
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8080/actuator/health | grep -q '"status":"UP"'; then exit 0; fi
+            sleep 2
+          done
+          docker logs xxl-job-test
+          exit 1
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-${{ matrix.os }}-pg${{ matrix.postgres }}
+          path: '**/target/surefire-reports/**'
+      - name: Upload tested application
+        if: matrix.os == 'ubuntu-24.04' && matrix.postgres == '16'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tested-admin-jar
+          path: xxl-job-admin/target/xxl-job-admin.jar
+          if-no-files-found: error
+
+  image:
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: tested-admin-jar
+          path: xxl-job-admin/target
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha,format=long
+      - uses: docker/build-push-action@v6
+        with:
+          context: xxl-job-admin
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Inspect published manifest
+        run: |
+          image=ghcr.io/${{ github.repository }}:sha-${{ github.sha }}
+          docker buildx imagetools inspect "$image"
+          docker buildx imagetools inspect --raw "$image" | jq -e '
+            any(.manifests[].platform; .os == "linux" and .architecture == "amd64") and
+            any(.manifests[].platform; .os == "linux" and .architecture == "arm64")'

@@ -12,6 +12,8 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class JobInfoControllerTest extends AbstractSpringMvcTest {
   private static Logger logger = LoggerFactory.getLogger(JobInfoControllerTest.class);
@@ -26,7 +28,9 @@ public class JobInfoControllerTest extends AbstractSpringMvcTest {
             .param("userName", "admin")
             .param("password", "123456")
     ).andReturn();
-    cookie = ret.getResponse().getCookie(Const.XXL_SSO_TOKEN);
+    assertTrue(ret.getResponse().getContentAsString().contains("\"code\":200"));
+    cookie = ret.getResponse().getCookie("xxl_job_login_token");
+    assertNotNull(cookie);
   }
 
   @Test
@@ -34,6 +38,9 @@ public class JobInfoControllerTest extends AbstractSpringMvcTest {
     MultiValueMap<String, String> parameters = new LinkedMultiValueMap<String, String>();
     parameters.add("jobGroup", "1");
     parameters.add("triggerStatus", "-1");
+    parameters.add("name", "");
+    parameters.add("executorHandler", "");
+    parameters.add("author", "");
 
     MvcResult ret = mockMvc.perform(
         post("/jobinfo/pageList")
@@ -41,9 +48,10 @@ public class JobInfoControllerTest extends AbstractSpringMvcTest {
             //.content(paramsJson)
             .params(parameters)
             .cookie(cookie)
-    ).andReturn();
+    ).andExpect(status().isOk()).andReturn();
 
-    logger.info(ret.getResponse().getContentAsString());
+    assertTrue(ret.getResponse().getContentAsString().contains("\"code\":200"));
+    assertTrue(ret.getResponse().getContentAsString().contains("demoJobHandler"));
   }
 
 }

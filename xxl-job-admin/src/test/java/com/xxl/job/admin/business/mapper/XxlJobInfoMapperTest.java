@@ -9,6 +9,7 @@ import com.xxl.tool.core.CollectionTool;
 import com.xxl.tool.core.DateTool;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,6 +18,7 @@ import java.util.Date;
 import java.util.List;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Transactional
 public class XxlJobInfoMapperTest {
 	private static Logger logger = LoggerFactory.getLogger(XxlJobInfoMapperTest.class);
 	

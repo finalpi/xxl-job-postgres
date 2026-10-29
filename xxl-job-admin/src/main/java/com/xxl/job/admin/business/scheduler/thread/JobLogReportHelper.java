@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -37,6 +36,19 @@ public class JobLogReportHelper {
         logReportThread = new CyclicThread("JobLogReportHelper#logReportThread", true, new Runnable() {
             @Override
             public void run() {
+
+                // 每小时执行一次分区维护；失败不推进时间，下轮重试。
+                if (System.currentTimeMillis() - lastCleanLogTime.get() >= 60 * 60 * 1000L) {
+                    try {
+                        int result = XxlJobAdminBootstrap.getInstance().getLogPartitionManager()
+                                .maintain(XxlJobAdminBootstrap.getInstance().getLogretentiondays());
+                        if (result >= 0) {
+                            lastCleanLogTime.set(System.currentTimeMillis());
+                        }
+                    } catch (Exception e) {
+                        logger.warn("日志分区维护失败，将在下一轮重试", e);
+                    }
+                }
 
                 // 1、log-report refresh: refresh log report in 3 days
                 for (int i = 0; i < 3; i++) {
@@ -86,31 +98,6 @@ public class JobLogReportHelper {
                         }*/
                 }
 
-                // 2、log-clean: switch open & once each day
-                if (XxlJobAdminBootstrap.getInstance().getLogretentiondays()>0
-                        && System.currentTimeMillis() - lastCleanLogTime.longValue() > 24*60*60*1000) {
-
-                    // expire-time
-                    Calendar expiredDay = Calendar.getInstance();
-                    expiredDay.add(Calendar.DAY_OF_MONTH, -1 * XxlJobAdminBootstrap.getInstance().getLogretentiondays());
-                    expiredDay.set(Calendar.HOUR_OF_DAY, 0);
-                    expiredDay.set(Calendar.MINUTE, 0);
-                    expiredDay.set(Calendar.SECOND, 0);
-                    expiredDay.set(Calendar.MILLISECOND, 0);
-                    Date clearBeforeTime = expiredDay.getTime();
-
-                    // clean expired log
-                    List<Long> logIds = null;
-                    do {
-                        logIds = XxlJobAdminBootstrap.getInstance().getXxlJobLogMapper().findClearLogIds(0, 0, clearBeforeTime, 0, 1000);
-                        if (logIds!=null && !logIds.isEmpty()) {
-                            XxlJobAdminBootstrap.getInstance().getXxlJobLogMapper().clearLog(logIds);
-                        }
-                    } while (logIds!=null && !logIds.isEmpty());
-
-                    // update clean time
-                    lastCleanLogTime.set(System.currentTimeMillis());
-                }
 
             }
         }, 60 * 1000L, true);

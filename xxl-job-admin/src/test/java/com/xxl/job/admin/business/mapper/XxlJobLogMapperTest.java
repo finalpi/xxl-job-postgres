@@ -3,12 +3,14 @@ package com.xxl.job.admin.business.mapper;
 import com.xxl.job.admin.business.model.XxlJobLog;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Date;
 import java.util.List;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Transactional
 public class XxlJobLogMapperTest {
 
     @Resource

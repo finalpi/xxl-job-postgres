@@ -33,7 +33,7 @@
 			</if>
 		</trim>
 		ORDER BY username ASC
-		LIMIT #{offset}, #{pagesize}
+		LIMIT #{pagesize} OFFSET #{offset}
 	</select>
 
 	<select id="pageListCount" parameterType="java.util.HashMap" resultType="int">
@@ -61,7 +61,7 @@
 		WHERE t.id = #{id}
 	</select>
 
-	<insert id="save" parameterType="com.xxl.job.admin.framework.model.XxlJobUser" useGeneratedKeys="true" keyProperty="id" >
+	<insert id="save" parameterType="com.xxl.job.admin.framework.model.XxlJobUser" useGeneratedKeys="true" keyProperty="id" keyColumn="id" >
 		INSERT INTO xxl_job_user (
 			username,
 			password,

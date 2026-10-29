@@ -18,6 +18,8 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.DependsOn;
+import com.xxl.job.admin.business.scheduler.LogPartitionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.Arrays;
@@ -31,6 +33,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 
 @Component
+@DependsOn("logPartitionManager")
 public class XxlJobAdminBootstrap implements InitializingBean, DisposableBean {
     private static final Logger logger = LoggerFactory.getLogger(XxlJobAdminBootstrap.class);
 
@@ -199,6 +202,13 @@ public class XxlJobAdminBootstrap implements InitializingBean, DisposableBean {
 
     @Value("${xxl.job.logretentiondays}")
     private int logretentiondays;
+
+    @Resource
+    private LogPartitionManager logPartitionManager;
+
+    public LogPartitionManager getLogPartitionManager() {
+        return logPartitionManager;
+    }
 
     // service, mapper
     @Resource

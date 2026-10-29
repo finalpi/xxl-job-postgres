@@ -23,7 +23,7 @@
 		<maven.compiler.encoding>UTF-8</maven.compiler.encoding>
 		<maven.compiler.source>17</maven.compiler.source>
 		<maven.compiler.target>17</maven.compiler.target>
-		<maven.test.skip>true</maven.test.skip>
+		<maven.test.skip>false</maven.test.skip>
 		<!-- plugin -->
 		<maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
 		<maven-source-plugin.version>3.4.0</maven-source-plugin.version>
@@ -33,7 +33,6 @@
 
 		<!-- base -->
 		<slf4j-api.version>2.0.20</slf4j-api.version>
-		<junit-jupiter.version>6.1.3</junit-jupiter.version>
 
 		<!-- jakarta.annotation-api -->
 		<jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
@@ -43,7 +42,7 @@
 		<spring.version>7.0.9</spring.version>
 		<!-- mybatis & db -->
 		<mybatis-spring-boot-starter.version>4.1.0</mybatis-spring-boot-starter.version>
-		<mysql-connector-j.version>26.7.0</mysql-connector-j.version>
+		<postgresql.version>42.7.8</postgresql.version>
 
 		<!-- net -->
 		<netty.version>4.2.19.Final</netty.version>
@@ -87,12 +86,6 @@
 				<version>${slf4j-api.version}</version>
 			</dependency>
 
-			<!-- junit -->
-			<dependency>
-				<groupId>org.junit.jupiter</groupId>
-				<artifactId>junit-jupiter-engine</artifactId>
-				<version>${junit-jupiter.version}</version>
-			</dependency>
 
 			<!-- jakarta -->
 			<dependency>
@@ -141,11 +134,11 @@
 				<artifactId>mybatis-spring-boot-starter</artifactId>
 				<version>${mybatis-spring-boot-starter.version}</version>
 			</dependency>
-			<!-- mysql -->
+			<!-- PostgreSQL 驱动 -->
 			<dependency>
-				<groupId>com.mysql</groupId>
-				<artifactId>mysql-connector-j</artifactId>
-				<version>${mysql-connector-j.version}</version>
+				<groupId>org.postgresql</groupId>
+				<artifactId>postgresql</artifactId>
+				<version>${postgresql.version}</version>
 			</dependency>
 
 			<!-- xxl-job-core -->
@@ -206,7 +199,16 @@
 
 	<build>
 		<plugins>
-		</plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.4</version>
+                <configuration>
+                    <!-- 旧的 OpenAPI 示例需要手工启动外部服务，单独按需执行。 -->
+                    <excludes><exclude>**/openapi/**</exclude></excludes>
+                </configuration>
+            </plugin>
+        </plugins>
 	</build>
 
 	<profiles>
