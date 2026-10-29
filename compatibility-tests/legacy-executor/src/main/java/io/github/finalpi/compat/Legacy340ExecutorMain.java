@@ -14,8 +14,11 @@ import java.nio.charset.StandardCharsets;
 public final class Legacy340ExecutorMain {
     public static void main(String[] args) throws Exception {
         String sdk = XxlJobExecutor.class.getProtectionDomain().getCodeSource().getLocation().toString();
-        if (!sdk.endsWith("xxl-job-core-3.4.0.jar")) throw new IllegalStateException("Unexpected SDK: " + sdk);
-        System.out.println("SDK=3.4.0 " + sdk);
+        String expected = args.length > 5 ? args[5] : "3.4.0";
+        if (!("3.4.0".equals(expected) || "2.4.0".equals(expected)) || !sdk.endsWith("xxl-job-core-" + expected + ".jar")) {
+            throw new IllegalStateException("Unexpected SDK: " + sdk);
+        }
+        System.out.println("SDK=" + expected + " " + sdk);
         XxlJobExecutor executor = new XxlJobExecutor();
         executor.setAdminAddresses(args[0]);
         executor.setAppname(args[1]);
@@ -23,14 +26,17 @@ public final class Legacy340ExecutorMain {
         executor.setIp("127.0.0.1");
         executor.setPort(Integer.parseInt(args[3]));
         executor.setLogPath(args[4]);
-        XxlJobExecutor.registryJobHandler("legacyProbe", new IJobHandler() {
+        IJobHandler handler = new IJobHandler() {
             @Override public void execute() throws Exception {
                 XxlJobHelper.log("LEGACY_340_PROBE " + XxlJobHelper.getJobParam());
                 if ("fail".equals(XxlJobHelper.getJobParam())) XxlJobHelper.handleFail("LEGACY_340_EXPECTED_FAILURE");
                 else if ("sleep".equals(XxlJobHelper.getJobParam())) Thread.sleep(60000);
                 else XxlJobHelper.handleSuccess("LEGACY_340_SUCCESS");
             }
-        });
+        };
+        // 两个 SDK 的注册方法拼写不同，反射只用于隔离的测试启动器。
+        XxlJobExecutor.class.getMethod("2.4.0".equals(expected) ? "registJobHandler" : "registryJobHandler",
+                String.class, IJobHandler.class).invoke(null, "legacyProbe", handler);
         executor.start();
         try (BufferedReader input = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8))) {
             while (input.readLine() != null) break;

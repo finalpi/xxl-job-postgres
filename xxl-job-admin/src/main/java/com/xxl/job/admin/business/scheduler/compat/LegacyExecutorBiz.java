@@ -11,5 +11,5 @@ public interface LegacyExecutorBiz {
     Response<String> idleBeat(IdleBeatRequest request);
     Response<String> run(TriggerRequest request);
     Response<String> kill(KillRequest request);
-    Response<LogData> log(LegacyLogRequest request);
+    LegacyLogResponse log(LegacyLogRequest request);
 }

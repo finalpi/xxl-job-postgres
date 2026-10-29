@@ -7,12 +7,24 @@ import com.xxl.job.core.openapi.admin.dto.RegistryRequest;
 import com.xxl.job.core.openapi.executor.dto.*;
 import com.xxl.tool.response.Response;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import com.xxl.tool.json.GsonTool;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class LegacyExecutorAdapterTest {
+    @ParameterizedTest
+    @ValueSource(strings = {"data", "content"})
+    void acceptsBothReleasedLegacyLogEnvelopes(String field) {
+        LegacyLogResponse wire = GsonTool.fromJson("{\"code\":200,\"" + field
+                + "\":{\"fromLineNum\":1,\"toLineNum\":2,\"logContent\":\"legacy-log\",\"isEnd\":true}}", LegacyLogResponse.class);
+        assertTrue(wire.toCurrent().isSuccess());
+        assertEquals("legacy-log", wire.toCurrent().getData().getLogContent());
+        assertTrue(wire.toCurrent().getData().isEnd());
+    }
     @Test
     void rejectedTriggerIsNotRetriedAndLogDateFieldIsTranslated() {
         LegacyExecutorBiz delegate = mock(LegacyExecutorBiz.class);

@@ -14,6 +14,8 @@ import com.xxl.job.core.openapi.executor.ExecutorBiz;
 import com.xxl.job.core.openapi.executor.dto.*;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -80,13 +82,15 @@ class Legacy340EndToEndTest {
         }
     }
 
-    @Test
-    void realLegacyExecutorRegistersRunsCronReadsLogsFailsKillsAndCoexistsWithCurrent(@TempDir Path temp) throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"3.4.0", "2.4.0"})
+    void realLegacyExecutorRegistersRunsCronReadsLogsFailsKillsAndCoexistsWithCurrent(String sdkVersion, @TempDir Path temp) throws Exception {
         Path fixture = Path.of(System.getProperty("legacy.fixture.directory"));
+        if ("2.4.0".equals(sdkVersion)) fixture = fixture.resolveSibling("legacy24-executor");
         assertTrue(Files.exists(fixture.resolve("target/legacy-classpath.txt")), "请用 -pl xxl-job-admin -am 构建测试");
         String classpath = fixture.resolve("target/classes") + File.pathSeparator
                 + Files.readString(fixture.resolve("target/legacy-classpath.txt")).trim();
-        assertTrue(classpath.contains("xxl-job-core-3.4.0.jar"));
+        assertTrue(classpath.contains("xxl-job-core-" + sdkVersion + ".jar"));
         assertFalse(classpath.contains("xxl-job-core-3.5"));
         String java = Path.of(System.getProperty("java.home"), "bin", "java").toString();
         int oldPort = freePort();
@@ -100,10 +104,10 @@ class Legacy340EndToEndTest {
         try {
             old = new ProcessBuilder(java, "-cp", classpath, "io.github.finalpi.compat.Legacy340ExecutorMain",
                     "http://127.0.0.1:" + adminPort, "xxl-job-executor-sample", "default_token",
-                    String.valueOf(oldPort), temp.resolve("old-logs").toString())
+                    String.valueOf(oldPort), temp.resolve("old-logs").toString(), sdkVersion)
                     .redirectErrorStream(true).redirectOutput(fixtureLog.toFile()).start();
             await(() -> "V3_4_0".equals(registry.findExecutorProtocol("xxl-job-executor-sample", oldAddress, oldAddress)), 20, fixtureLog);
-            assertTrue(Files.readString(fixtureLog).contains("SDK=3.4.0"));
+            assertTrue(Files.readString(fixtureLog).contains("SDK=" + sdkVersion));
 
             int newPort = freePort();
             String newAddress = "http://127.0.0.1:" + newPort + "/";

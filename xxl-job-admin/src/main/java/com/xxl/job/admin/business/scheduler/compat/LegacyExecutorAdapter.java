@@ -19,6 +19,7 @@ public final class LegacyExecutorAdapter implements ExecutorBiz {
     @Override public Response<String> trigger(TriggerRequest request) { return delegate.run(request); }
     @Override public Response<String> kill(KillRequest request) { return delegate.kill(request); }
     @Override public Response<LogData> log(LogRequest request) {
-        return delegate.log(new LegacyLogRequest(request.getLogId(), request.getLogDateTime(), request.getFromLineNum()));
+        LegacyLogResponse response = delegate.log(new LegacyLogRequest(request.getLogId(), request.getLogDateTime(), request.getFromLineNum()));
+        return response == null ? Response.ofFail("Empty legacy executor log response") : response.toCurrent();
     }
 }
