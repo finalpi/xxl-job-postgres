@@ -6,10 +6,7 @@ import com.xxl.job.admin.business.scheduler.alarm.JobAlarmer;
 import com.xxl.job.admin.business.scheduler.complete.JobCompleter;
 import com.xxl.job.admin.business.scheduler.thread.*;
 import com.xxl.job.admin.business.scheduler.trigger.JobTrigger;
-import com.xxl.job.core.constant.Const;
 import com.xxl.job.core.openapi.executor.ExecutorBiz;
-import com.xxl.tool.core.StringTool;
-import com.xxl.tool.http.HttpTool;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,8 +20,6 @@ import com.xxl.job.admin.business.scheduler.LogPartitionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * xxl-job config
@@ -139,43 +134,14 @@ public class XxlJobAdminBootstrap implements InitializingBean, DisposableBean {
 
     // ---------------------- executor-client ----------------------
 
-    private static final ConcurrentMap<String, ExecutorBiz> executorBizRepository = new ConcurrentHashMap<>();
-    private static final int EXECUTOR_BIZ_CACHE_MAX_SIZE = 1000;
+    @Resource
+    private com.xxl.job.admin.business.scheduler.compat.ExecutorClientFactory executorClientFactory;
 
     /**
-     * get executor-client
+     * 根据已注册的地址协议创建客户端，旧协议不通过失败重发来探测。
      */
     public static ExecutorBiz getExecutorBiz(String address, XxlJobGroup xxlJobGroup) throws Exception {
-        // valid
-        if (StringTool.isBlank(address) || xxlJobGroup == null) {
-            return null;
-        }
-        address = address.trim();
-        String accessToken = xxlJobGroup.getAccessToken();
-        String appname = xxlJobGroup.getAppname();
-
-        // load-cache
-        String cacheKey = address + "|" + accessToken + "|" + appname;
-        ExecutorBiz executorBiz = executorBizRepository.get(cacheKey);
-        if (executorBiz != null) {
-            return executorBiz;
-        }
-
-        // new client
-        executorBiz = HttpTool.createClient()
-                .url(address)
-                .connectTimeout(XxlJobAdminBootstrap.getInstance().getTimeout() * 1000)
-                .readTimeout(XxlJobAdminBootstrap.getInstance().getTimeout() * 1000)
-                .header(Const.XXL_JOB_ACCESS_TOKEN, accessToken)
-                .header(Const.XXL_JOB_APPNAME, appname)
-                .proxy(ExecutorBiz.class);
-        executorBizRepository.put(cacheKey, executorBiz);
-
-        // avoid unbounded growth
-        if (executorBizRepository.size() > EXECUTOR_BIZ_CACHE_MAX_SIZE) {
-            executorBizRepository.clear();
-        }
-        return executorBiz;
+        return getInstance().executorClientFactory.get(address, xxlJobGroup);
     }
 
 

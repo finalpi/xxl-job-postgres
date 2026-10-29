@@ -3,6 +3,7 @@
 本 fork 基于上游 `3.5.1-SNAPSHOT`，调度中心改用 PostgreSQL 14+。日志按日分区，自动清理直接回收过期分区；GitHub Actions 在 PostgreSQL 14/16/18 与 amd64/arm64 上测试，通过后发布多架构镜像。
 
 - [部署、配置、日志回收原理和测试说明](doc/POSTGRESQL.md)
+- [3.4.0 执行器兼容、接入条件和升级步骤](doc/COMPATIBILITY_3_4_0.md)
 - [测试和镜像构建状态](https://github.com/finalpi/xxl-job-postgres/actions/workflows/postgres.yml)
 - 镜像：`ghcr.io/finalpi/xxl-job-postgres:latest`（默认分支工作流成功后更新）
 

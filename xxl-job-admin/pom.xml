@@ -14,6 +14,14 @@
 	</properties>
 
 	<dependencies>
+        <!-- 只建立 reactor 构建顺序；旧 SDK 在独立 JVM 中加载，不能进入当前测试类路径。 -->
+        <dependency>
+            <groupId>io.github.finalpi</groupId>
+            <artifactId>xxl-job-legacy-executor-fixture</artifactId>
+            <version>3.4.0</version>
+            <scope>test</scope>
+            <exclusions><exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion></exclusions>
+        </dependency>
 
 		<!-- starter-web -->
 		<dependency>

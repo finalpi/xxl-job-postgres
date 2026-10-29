@@ -1,6 +1,7 @@
 package com.xxl.job.admin.business.scheduler.thread;
 
 import com.xxl.job.admin.business.model.XxlJobGroup;
+import com.xxl.job.admin.business.scheduler.compat.ExecutorProtocol;
 import com.xxl.job.admin.business.model.XxlJobRegistry;
 import com.xxl.job.admin.business.scheduler.config.XxlJobAdminBootstrap;
 import com.xxl.job.core.constant.Const;
@@ -162,6 +163,11 @@ public class JobRegistryHelper {
 	 * registry
 	 */
 	public Response<String> registry(RegistryRequest registryParam) {
+        return registry(registryParam, ExecutorProtocol.CURRENT);
+    }
+
+    /** 持久化已鉴权心跳的协议，其他调度实例无需重新探测执行器。 */
+    public Response<String> registry(RegistryRequest registryParam, ExecutorProtocol protocol) {
 
 		// valid
 		if (StringTool.isBlank(registryParam.getRegistryGroup())
@@ -175,7 +181,7 @@ public class JobRegistryHelper {
 			@Override
 			public void run() {
 				// 0-fail; 1-save suc; 2-update suc;
-				int ret = XxlJobAdminBootstrap.getInstance().getXxlJobRegistryMapper().registrySaveOrUpdate(registryParam.getRegistryGroup(), registryParam.getRegistryKey(), registryParam.getRegistryValue(), new Date());
+				int ret = XxlJobAdminBootstrap.getInstance().getXxlJobRegistryMapper().registrySaveOrUpdateWithProtocol(registryParam.getRegistryGroup(), registryParam.getRegistryKey(), registryParam.getRegistryValue(), new Date(), protocol.name());
 				if (ret == 1) {
 					// fresh (add)
 					freshGroupRegistryInfo(registryParam);

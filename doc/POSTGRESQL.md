@@ -1,6 +1,6 @@
 # PostgreSQL 版本使用说明
 
-本 fork 基于 XXL-JOB `3.5.1-SNAPSHOT`，调度中心使用 PostgreSQL 14 及以上版本。执行器协议和任务 ID 类型保持兼容；此分支的 SQL 不再用于 MySQL。
+本 fork 基于 XXL-JOB `3.5.1-SNAPSHOT`，调度中心使用 PostgreSQL 14 及以上版本，保留任务 ID 类型，并通过兼容层支持原版 3.4.0 执行器。此分支的 SQL 不再用于 MySQL。旧协议、令牌和升级要求见 [3.4.0 兼容说明](COMPATIBILITY_3_4_0.md)。
 
 ## 启动
 

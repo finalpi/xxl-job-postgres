@@ -21,10 +21,21 @@ public interface XxlJobRegistryMapper {
     public List<XxlJobRegistry> findAll(@Param("timeout") int timeout,
                                         @Param("nowTime") Date nowTime);
 
-    public int registrySaveOrUpdate(@Param("registryGroup") String registryGroup,
+    default int registrySaveOrUpdate(String registryGroup, String registryKey, String registryValue, Date updateTime) {
+        return registrySaveOrUpdateWithProtocol(registryGroup, registryKey, registryValue, updateTime, "CURRENT");
+    }
+
+    /** 保存心跳及已鉴权请求所使用的协议。 */
+    int registrySaveOrUpdateWithProtocol(@Param("registryGroup") String registryGroup,
                             @Param("registryKey") String registryKey,
                             @Param("registryValue") String registryValue,
-                            @Param("updateTime") Date updateTime);
+                            @Param("updateTime") Date updateTime,
+                            @Param("executorProtocol") String executorProtocol);
+
+    /** 查询指定地址的协议，兼容手工地址末尾斜杠的差异。 */
+    String findExecutorProtocol(@Param("appname") String appname,
+                               @Param("address") String address,
+                               @Param("alternativeAddress") String alternativeAddress);
 
     /*public int registryUpdate(@Param("registryGroup") String registryGroup,
                               @Param("registryKey") String registryKey,

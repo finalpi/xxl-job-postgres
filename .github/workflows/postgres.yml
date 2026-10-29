@@ -51,6 +51,7 @@ jobs:
           for pass in 1 2; do
             docker exec -i '${{ job.services.postgres.id }}' psql -U xxltest -d xxl_job -v ON_ERROR_STOP=1 < doc/db/tables_xxl_job.sql
             docker exec -i '${{ job.services.postgres.id }}' psql -U xxltest -d xxl_job -v ON_ERROR_STOP=1 < doc/db/log_partitions.sql
+            docker exec -i '${{ job.services.postgres.id }}' psql -U xxltest -d xxl_job -v ON_ERROR_STOP=1 < doc/db/migrations/20261029_legacy_executor_protocol.sql
           done
       - name: Test core, all admin mappers, retention, concurrency and end-to-end execution
         run: mvn -B -ntp -pl xxl-job-admin -am -Dmaven.javadoc.skip=true -Dgpg.skip=true verify

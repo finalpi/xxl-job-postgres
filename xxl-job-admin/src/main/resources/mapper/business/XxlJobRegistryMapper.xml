@@ -39,12 +39,20 @@
 		WHERE t.update_time <![CDATA[ > ]]> (CAST(#{nowTime} AS timestamp) - #{timeout} * INTERVAL '1 second')
 	</select>
 
-	<insert id="registrySaveOrUpdate" >
-		INSERT INTO xxl_job_registry( registry_group , registry_key , registry_value, update_time)
-		VALUES( #{registryGroup}  , #{registryKey} , #{registryValue}, #{updateTime})
+	<insert id="registrySaveOrUpdateWithProtocol" >
+		INSERT INTO xxl_job_registry( registry_group , registry_key , registry_value, update_time, executor_protocol)
+		VALUES( #{registryGroup}  , #{registryKey} , #{registryValue}, #{updateTime}, #{executorProtocol})
 		ON CONFLICT (registry_group, registry_key, registry_value) DO UPDATE SET
-			update_time = #{updateTime}
+			update_time = #{updateTime}, executor_protocol = #{executorProtocol}
 	</insert>
+
+    <select id="findExecutorProtocol" resultType="string">
+        SELECT executor_protocol FROM xxl_job_registry
+        WHERE registry_group = 'EXECUTOR' AND registry_key = #{appname}
+          AND registry_value IN (#{address}, #{alternativeAddress})
+        ORDER BY CASE WHEN registry_value = #{address} THEN 0 ELSE 1 END, update_time DESC
+        LIMIT 1
+    </select>
 
 
 

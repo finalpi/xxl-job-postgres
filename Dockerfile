@@ -5,6 +5,7 @@ COPY pom.xml ./
 COPY xxl-job-core ./xxl-job-core
 COPY xxl-job-admin ./xxl-job-admin
 COPY xxl-job-executor-samples ./xxl-job-executor-samples
+COPY compatibility-tests ./compatibility-tests
 RUN --mount=type=cache,target=/root/.m2 \
     mvn -B -ntp -pl xxl-job-admin -am -DskipTests -Dmaven.javadoc.skip=true -Dgpg.skip=true package
 

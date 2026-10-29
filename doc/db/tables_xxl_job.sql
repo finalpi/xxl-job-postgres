@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS xxl_job_registry
     registry_key          VARCHAR(255)        NOT NULL,
     registry_value        VARCHAR(255)        NOT NULL,
     update_time           TIMESTAMP(3)            DEFAULT NULL,
+    executor_protocol     VARCHAR(16) NOT NULL DEFAULT 'CURRENT',
     PRIMARY KEY (id),
     UNIQUE (registry_group, registry_key, registry_value)
 );

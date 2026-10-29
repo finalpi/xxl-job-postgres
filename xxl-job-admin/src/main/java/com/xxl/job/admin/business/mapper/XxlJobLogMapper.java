@@ -15,6 +15,12 @@ import java.util.Map;
 @Mapper
 public interface XxlJobLogMapper {
 
+    /** 批量核对回调所属组及令牌；已过期的日志保持上游忽略处理的行为。 */
+    boolean hasUnauthorizedCallbacks(@Param("logIds") List<Long> logIds,
+                                     @Param("accessToken") String accessToken,
+                                     @Param("appname") String appname,
+                                     @Param("legacyToken") String legacyToken);
+
 	// exist jobId not use jobGroup, not exist use jobGroup
 	public List<XxlJobLog> pageList(@Param("offset") int offset,
 									@Param("pagesize") int pagesize,

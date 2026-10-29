@@ -3,6 +3,22 @@
 	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xxl.job.admin.business.mapper.XxlJobLogMapper">
 
+    <select id="hasUnauthorizedCallbacks" resultType="boolean">
+        SELECT NOT EXISTS (
+            SELECT 1 FROM xxl_job_group
+            WHERE (CASE WHEN access_token IS NULL OR btrim(access_token) = '' THEN #{legacyToken,jdbcType=VARCHAR} ELSE access_token END) = #{accessToken}
+            <if test="appname != null">AND app_name = #{appname}</if>
+        ) OR EXISTS (
+            SELECT 1 FROM xxl_job_log log
+            LEFT JOIN xxl_job_group grp ON grp.id = log.job_group
+            WHERE log.id IN
+            <foreach collection="logIds" item="id" open="(" close=")" separator=",">#{id}</foreach>
+            AND (grp.id IS NULL OR
+                 (CASE WHEN grp.access_token IS NULL OR btrim(grp.access_token) = '' THEN #{legacyToken,jdbcType=VARCHAR} ELSE grp.access_token END) IS DISTINCT FROM #{accessToken}
+                 <if test="appname != null">OR grp.app_name IS DISTINCT FROM #{appname}</if>)
+        )
+    </select>
+
 	<resultMap id="XxlJobLog" type="com.xxl.job.admin.business.model.XxlJobLog" >
 		<result column="id" property="id" />
 
